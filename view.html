@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Conversation History</title>
+    <style>
+        /* General Reset and Body Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            min-height: 100vh;
+            background: #eee;
+            display: flex;
+            flex-direction: column; /* Allow content to stack vertically */
+            align-items: center; /* Center horizontally */
+            font-family: sans-serif;
+            padding: 20px; /* Add some padding around the main container */
+        }
+
+        /* Container for the entire view */
+        .main-container {
+            width: 800px; /* Wider container for tables and chat */
+            max-width: 95%; /* Responsive max-width */
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 8px 16px rgba(0,0,0,.3);
+            padding: 20px;
+            margin-top: 20px; /* Space from top */
+        }
+
+        h1 {
+            text-align: center;
+            color: #222;
+            margin-bottom: 20px;
+        }
+
+        /* Password Entry Section */
+        #password-entry {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+            border-bottom: 1px solid #ddd; /* Separator */
+            margin-bottom: 20px;
+        }
+        #password-entry input {
+            width: 300px;
+            height: 40px;
+            padding: 0 10px;
+            margin-bottom: 15px;
+            border: 1px solid silver;
+            border-radius: 4px;
+        }
+        #password-entry button {
+            background:#3390ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: .3s;
+        }
+        #password-entry button:hover {
+            opacity: .7;
+        }
+        #password-entry p {
+            margin-top: 10px;
+            color: red;
+        }
+
+        /* Tabs Navigation */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            margin: 0 5px;
+            transition: background 0.3s ease;
+        }
+        .tab-button.active {
+            background: #3390ff;
+            color: white;
+            border-color: #3390ff;
+        }
+        .tab-button:hover:not(.active) {
+            background: #e0e0e0;
+        }
+
+        /* Tab Content Sections */
+        .tab-content {
+            display: none; /* Hidden by default */
+            padding: 15px 0;
+        }
+        .tab-content.active {
+            display: block; /* Shown when active */
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        table th {
+            background-color: #f2f2f2;
+            color: #333;
+            text-transform: uppercase;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        table tbody tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Individual column filters (for User List table) */
+        .filter-input {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box; /* Include padding in element's total width */
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-top: 5px; /* Space between header text and input */
+            font-size: 0.8em; /* Smaller font for filter inputs */
+        }
+
+        /* Chat Selection Area (on chat history tab) */
+        .chat-selection-area {
+            display: flex;
+            flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee; /* Light separator */
+            gap: 10px; /* Space between main flex items */
+        }
+        .chat-selection-area label {
+            margin-right: 5px; /* Adjust margin for labels within main flex */
+            min-width: 80px; /* Give labels some consistent width */
+            flex-shrink: 0; /* Prevent label from shrinking too much */
+        }
+        .chat-selection-area input[type="text"],
+        .chat-selection-area select { /* Style for both input and select */
+            flex-grow: 1; /* Allow them to take up available space */
+            height: 40px;
+            padding: 0 10px;
+            border: 1px solid silver;
+            border-radius: 4px;
+            min-width: 120px; /* Ensure they don't get too small */
+        }
+
+        /* Styles for the group of "Load Chat" elements */
+        .load-chat-line {
+            display: flex; /* Make it a flex container */
+            align-items: center; /* Vertically align items */
+            flex-grow: 1; /* Allow this group to take available space in parent .chat-selection-area */
+            gap: 10px; /* Space between items inside this group */
+            min-width: 280px; /* Ensure this group doesn't get too small and force wrapping prematurely */
+            margin-top: 5px; /* Small top margin if it wraps below dropdowns */
+            flex-wrap: wrap; /* Allow this line to wrap too on very small screens */
+        }
+
+        .load-chat-line label {
+            margin-right: 0; /* Reset margin from parent .chat-selection-area label */
+            min-width: unset; /* Reset min-width from parent .chat-selection-area label */
+        }
+
+        .load-chat-line input[type="text"] {
+            flex-grow: 1; /* Allow input to take remaining space */
+            min-width: 150px; /* Ensure the student name input is sufficiently wide */
+        }
+
+        .chat-selection-area button { /* Style for the Load Chat button */
+            background:#3390ff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: .3s;
+            flex-shrink: 0; /* Prevent button from shrinking */
+        }
+        .chat-selection-area button:hover {
+            opacity: .7;
+        }
+
+
+        /* Chat History Display Styles */
+        .chat-display {
+            border: 1px solid #ddd;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            min-height: 150px;
+            max-height: 400px; /* Scrollable chat history */
+            overflow-y: auto;
+            white-space: pre-wrap; /* Preserve whitespace and wrap text */
+            font-size: 0.95em;
+            line-height: 1.6;
+            position: relative; /* For copy button positioning */
+            margin-top: 10px;
+        }
+        /* Individual chat message container for flex alignment within chat-display */
+        .chat-message-container {
+            display: flex;
+            flex-direction: column; /* Messages and timestamps stack */
+            margin-bottom: 10px; /* Space between message groups */
+        }
+
+        .chat-message { /* Actual bubble */
+            padding: 5px 8px;
+            border-radius: 5px;
+            max-width: 80%; /* Limit bubble width */
+        }
+        .ai-message {
+            background-color: #e6f7ff; /* Light blue */
+            align-self: flex-start; /* Align to left */
+        }
+        .student-message {
+            background-color: #f0f0f0; /* Light gray */
+            align-self: flex-start; /* Changed to left */
+            margin-left: 20%; /* Indent student messages slightly */
+        }
+        .chat-timestamp {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 2px;
+            margin-bottom: 5px; /* Space between timestamp and next message container */
+            text-align: left; /* Aligned with the bubble above */
+            padding-left: 8px; /* Match bubble padding */
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 5px;
+            width: 100%; /* Ensure it spans full width for its text-align */
+        }
+
+        .copy-button {
+            position: sticky; /* Sticky to stay visible when scrolling chat */
+            bottom: 10px;
+            right: 10px;
+            float: right; /* Position to the right within the scrollable div */
+            background-color: #5cb85c; /* Green */
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8em;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+            margin-top: 10px; /* Space from chat messages */
+        }
+        .copy-button:hover {
+            opacity: 1;
+        }
+        /* Style for the "Student Info" header for conversations */
+        .student-info-header {
+            font-weight: bold;
+            color: #4CAF50; /* Green color for emphasis */
+            margin-top: 15px;
+            margin-bottom: 5px;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Message Box for Feedback */
+        #messageBox {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            color: #333;
+            padding: 15px 20px;
+            border-radius: 4px;
+            border: 1px solid;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            font-family: sans-serif;
+            text-align: center;
+            width: 80%;
+            max-width: 350px;
+            display: none; /* Hidden by default, shown by JS */
+        }
+        #messageBox.error { border-color: #f44336; }
+        #messageBox.success { border-color: #4CAF50; }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <h1>Conversation History Viewer</h1>
+
+        <div id="password-entry">
+            <h2>Access Required</h2>
+            <input type="password" id="accessPassword" placeholder="Enter Access Password" required>
+            <button id="submitAccessPassword">Grant Access</button>
+            <p id="accessMessage"></p>
+        </div>
+
+        <div id="content-area" style="display: none;">
+            <div class="tabs">
+                <button class="tab-button active" data-tab="users">User List</button>
+                <button class="tab-button" data-tab="chat-history">Chat History</button>
+            </div>
+
+            <div id="users-content" class="tab-content active">
+                <h2>Registered Student Users</h2>
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>
+                                User ID
+                                <input type="text" class="filter-input" placeholder="Filter ID" data-column="0">
+                            </th>
+                            <th>
+                                First Name
+                                <input type="text" class="filter-input" placeholder="Filter First Name" data-column="1">
+                            </th>
+                            <th>
+                                Last Name
+                                <input type="text" class="filter-input" placeholder="Filter Last Name" data-column="2">
+                            </th>
+                            <th>
+                                Grade Level
+                                <input type="text" class="filter-input" placeholder="Filter Grade" data-column="3">
+                            </th>
+                            <th>
+                                Gender
+                                <input type="text" class="filter-input" placeholder="Filter Gender" data-column="4">
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+
+            <div id="chat-history-content" class="tab-content">
+                <h2>Chat History by Student User</h2>
+                <div class="chat-selection-area">
+                    <label for="gradeFilter">Grade Level:</label>
+                    <select id="gradeFilter">
+                        <option value="">All Grades</option>
+                        </select>
+
+                    <label for="genderFilter">Gender:</label>
+                    <select id="genderFilter">
+                        <option value="">All Genders</option>
+                        </select>
+
+                    <div class="load-chat-line">
+                        <label for="studentNameInput">Load Chat for:</label>
+                        <input type="text" id="studentNameInput" list="studentNames" placeholder="Type student name or ID">
+                        <datalist id="studentNames">
+                            </datalist>
+                        <button id="loadChatBtn">Load Chat</button>
+                    </div>
+                </div>
+                <div class="chat-display" id="chatDisplay">
+                    <p>Select filters above to see conversations, or enter a student's name/ID.</p>
+                </div>
+                <button class="copy-button" id="copyChatBtn" style="display: none;">Copy Conversation</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageBox"></div>
+
+    <script>
+        // Define backend URLs based on your provided code
+        const CHAT_BACKEND_URL = 'http://localhost:3001'; // Your server.js runs on 3001
+        const AUTH_BACKEND_URL = 'http://localhost:3002'; // Your auth_backend_server.js runs on 3002
+
+        // DOM Elements
+        const passwordEntryDiv = document.getElementById('password-entry');
+        const accessPasswordInput = document.getElementById('accessPassword');
+        const submitAccessPasswordBtn = document.getElementById('submitAccessPassword');
+        const accessMessage = document.getElementById('accessMessage');
+        const contentArea = document.getElementById('content-area');
+        const messageBox = document.getElementById('messageBox');
+
+        const usersTable = document.getElementById('usersTable');
+        const usersTableBody = usersTable.querySelector('tbody');
+        const filterInputs = usersTable.querySelectorAll('.filter-input'); // Select all filter inputs
+
+        // Elements for Chat History Tab
+        const tabButtons = document.querySelectorAll('.tab-button'); // Added
+        const tabContents = document.querySelectorAll('.tab-content'); // Added
+
+        const gradeFilterSelect = document.getElementById('gradeFilter');
+        const genderFilterSelect = document.getElementById('genderFilter');
+        const studentNameInput = document.getElementById('studentNameInput');
+        const studentNamesDatalist = document.getElementById('studentNames');
+        const loadChatBtn = document.getElementById('loadChatBtn');
+        const chatDisplay = document.getElementById('chatDisplay');
+        const copyChatBtn = document.getElementById('copyChatBtn');
+        const loadChatLine = document.querySelector('.load-chat-line'); // Added to show/hide
+
+        let usersData = []; // To store fetched user data for datalist and table
+        let currentLoadedConversations = []; // To store conversations for copy function
+
+        // --- Utility Functions ---
+
+        // Function to display messages to the user (similar to your sign-in form)
+        function showMessage(message, isError = false) {
+            messageBox.textContent = message;
+            messageBox.style.display = 'block'; // Ensure it's visible
+            messageBox.classList.remove('error', 'success');
+            messageBox.classList.add(isError ? 'error' : 'success');
+
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 2500);
+        }
+
+        // --- Access Control Logic ---
+
+        submitAccessPasswordBtn.addEventListener('click', async () => {
+            const password = accessPasswordInput.value;
+            const accessEmail = 'jieunkim@branksome.asia'; // The admin email you want to use for access
+            
+            if (!password) {
+                accessMessage.textContent = 'Please enter a password.';
+                return;
+            }
+            accessMessage.textContent = ''; // Clear previous message
+
+            try {
+                // Call the auth_backend_server's /api/login endpoint for verification
+                const response = await fetch(`${AUTH_BACKEND_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: accessEmail, password: password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) { // Login successful
+                    passwordEntryDiv.style.display = 'none'; // Hide password entry
+                    contentArea.style.display = 'block';     // Show main content
+                    showMessage('Access granted!', false);
+                    await loadUsers(); // Load users data once access is granted
+
+                    // Automatically switch to 'users' tab first, then handle chat history initial load
+                    document.querySelector('.tab-button[data-tab="users"]').click();
+                } else {
+                    accessMessage.textContent = result.error || 'Incorrect password.';
+                    showMessage(result.error || 'Access Denied.', true);
+                }
+            } catch (error) {
+                console.error('Access verification error:', error);
+                accessMessage.textContent = 'Network error or authentication server unavailable.';
+                showMessage('Network error or authentication server unavailable.', true);
+            }
+        });
+
+        // --- Tab Navigation Logic ---
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', async (event) => {
+                // Remove 'active' from all buttons and content
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                // Add 'active' to the clicked button and its corresponding content
+                event.target.classList.add('active');
+                const targetTab = event.target.dataset.tab;
+                document.getElementById(`${targetTab}-content`).classList.add('active');
+
+                // If switching to chat history, load conversations based on current filters
+                if (targetTab === 'chat-history') {
+                    if (usersData.length === 0) { // Ensure users are loaded for potential datalist (if specific student search becomes active)
+                        await loadUsers();
+                    }
+                    // Initial load or reload based on current filter selections
+                    loadFilteredConversations();
+                    updateIndividualStudentSearchVisibility(); // Control visibility of specific student search
+                }
+                // If switching back to users tab, ensure table is rendered
+                else if (targetTab === 'users' && usersData.length > 0) {
+                     renderUsersTable(usersData); // Re-render table with all data, then apply existing filters
+                     applyAllTableFilters();
+                }
+            });
+        });
+
+        // --- Data Loading Functions ---
+
+        async function loadUsers() {
+            try {
+                const password = accessPasswordInput.value;
+
+                const response = await fetch(`${CHAT_BACKEND_URL}/api/all-users`, {
+                    headers: { 'x-access-password': password }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    showMessage(errorData.message || 'Failed to load users.', true);
+                    return;
+                }
+
+                const data = await response.json();
+                usersData = data;
+
+                // Populate Grade and Gender dropdowns with fixed options (only if not already populated)
+                if (gradeFilterSelect.options.length <= 1) { // Check if only "All Grades" is present
+                    populateFilters();
+                }
+                // Initial population of Datalist for studentNameInput (only if specific search is active)
+                updateDatalistOptions();
+
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                showMessage('Network error while loading users.', true);
+            }
+        }
+
+        // Function to populate Grade and Gender filter dropdowns with fixed options
+        function populateFilters() {
+            const fixedGrades = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+            const fixedGenders = ['Male', 'Female']; 
+
+            // Populate Grade Filter
+            gradeFilterSelect.innerHTML = '<option value="">All Grades</option>';
+            fixedGrades.forEach(grade => {
+                const option = document.createElement('option');
+                option.value = grade;
+                option.textContent = grade;
+                gradeFilterSelect.appendChild(option);
+            });
+
+            // Populate Gender Filter
+            genderFilterSelect.innerHTML = '<option value="">All Genders</option>';
+            fixedGenders.forEach(gender => {
+                const option = document.createElement('option');
+                option.value = gender;
+                option.textContent = gender;
+                genderFilterSelect.appendChild(option);
+            });
+        }
+
+
+        // Function to update the datalist options based on grade and gender filters
+        // This function is now mainly for the "individual student search" when filters are 'All'
+        function updateDatalistOptions() {
+            const selectedGrade = gradeFilterSelect.value;
+            const selectedGender = genderFilterSelect.value;
+
+            // console.log(`[Datalist Filter] Selected Grade: "${selectedGrade}", Selected Gender: "${selectedGender}"`);
+            // console.log(`[Datalist Filter] Total users loaded: ${usersData.length}`);
+
+            // Filter users based on selected dropdowns
+            const filteredUsersForDatalist = usersData.filter(user => {
+                const userGrade = user.GradeLevel ? String(user.GradeLevel).toLowerCase() : '';
+                const userGender = user.Gender ? String(user.Gender).toLowerCase() : '';
+                
+                const matchesGrade = selectedGrade === '' || userGrade === selectedGrade.toLowerCase();
+                const matchesGender = selectedGender === '' || userGender === selectedGender.toLowerCase();
+                
+                return matchesGrade && matchesGender;
+            });
+
+            // console.log(`[Datalist Filter] Users after filtering: ${filteredUsersForDatalist.length}`);
+
+            studentNamesDatalist.innerHTML = ''; 
+            if (filteredUsersForDatalist.length === 0) {
+                const option = document.createElement('option');
+                option.value = "No matching students found.";
+                option.disabled = true;
+                studentNamesDatalist.appendChild(option);
+            } else {
+                filteredUsersForDatalist.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = `${user.FirstName || ''} ${user.LastName || ''} (ID: ${user.UserID})`;
+                    option.setAttribute('data-userid', user.UserID);
+                    studentNamesDatalist.appendChild(option);
+                });
+            }
+        }
+
+        // --- NEW: Load conversations based on Grade/Gender filters ---
+        async function loadFilteredConversations() {
+            const selectedGrade = gradeFilterSelect.value;
+            const selectedGender = genderFilterSelect.value;
+            
+            chatDisplay.innerHTML = '';
+            copyChatBtn.style.display = 'none';
+            currentLoadedConversations = [];
+
+            let apiUrl = `${CHAT_BACKEND_URL}/api/conversations-by-filters?`;
+            const params = new URLSearchParams();
+
+            if (selectedGrade) {
+                params.append('gradeLevel', selectedGrade);
+            }
+            if (selectedGender) {
+                params.append('gender', selectedGender);
+            }
+            apiUrl += params.toString();
+
+            console.log(`Loading conversations from: ${apiUrl}`);
+
+            try {
+                const password = accessPasswordInput.value;
+                const response = await fetch(apiUrl, {
+                    headers: { 'x-access-password': password }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    showMessage(errorData.message || 'Failed to load filtered conversations.', true);
+                    return;
+                }
+
+                const conversations = await response.json();
+                currentLoadedConversations = conversations; // Store for copy function
+                displayConversationHistory(conversations); // Display all conversations
+                updateIndividualStudentSearchVisibility(); // Update visibility after loading
+            } catch (error) {
+                console.error('Error fetching filtered conversations:', error);
+                showMessage('Network error while loading filtered conversations.', true);
+            }
+        }
+
+        // Function to control visibility of the single student search input/button
+        function updateIndividualStudentSearchVisibility() {
+            const selectedGrade = gradeFilterSelect.value;
+            const selectedGender = genderFilterSelect.value;
+
+            if (selectedGrade === '' && selectedGender === '') {
+                loadChatLine.style.display = 'flex'; // Show when "All Grades" and "All Genders"
+            } else {
+                loadChatLine.style.display = 'none'; // Hide when filters are active
+                studentNameInput.value = ''; // Clear input if hidden
+            }
+        }
+
+
+        // Add event listeners for dropdowns to trigger new load and update visibility
+        gradeFilterSelect.addEventListener('change', () => {
+            loadFilteredConversations();
+            updateDatalistOptions(); // Update datalist if it becomes visible again
+        });
+        genderFilterSelect.addEventListener('change', () => {
+            loadFilteredConversations();
+            updateDatalistOptions(); // Update datalist if it becomes visible again
+        });
+
+
+        // Function to render/re-render the users table based on provided data
+        function renderUsersTable(dataToRender) {
+            usersTableBody.innerHTML = ''; 
+            if (dataToRender.length === 0) {
+                usersTableBody.innerHTML = '<tr><td colspan="5">No student users found.</td></tr>';
+            } else {
+                dataToRender.forEach(user => {
+                    const row = usersTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${user.UserID}</td>
+                        <td>${user.FirstName || 'N/A'}</td>
+                        <td>${user.LastName || 'N/A'}</td>
+                        <td>${user.GradeLevel || 'N/A'}</td>
+                        <td>${user.Gender || 'N/A'}</td>
+                    `;
+                });
+            }
+        }
+
+        // --- Column Filtering Logic (for User List Table) ---
+        filterInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                applyAllTableFilters(); // Call the robust filter function
+            });
+        });
+
+        function applyAllTableFilters() {
+            const rows = usersTableBody.querySelectorAll('tr');
+            const activeFilters = Array.from(filterInputs).map(input => ({
+                column: parseInt(input.dataset.column),
+                value: input.value.toLowerCase().trim()
+            })).filter(filter => filter.value !== ''); // Only consider active filters
+
+            rows.forEach(row => {
+                // Skip the "No matching users found" row if it exists
+                if (row.classList.contains('no-data-row')) {
+                    row.style.display = 'none'; // Ensure it's hidden during filtering evaluation
+                    return;
+                }
+
+                let rowMatchesAllFilters = true;
+                if (activeFilters.length > 0) {
+                    activeFilters.forEach(filter => {
+                        const cell = row.children[filter.column];
+                        if (cell) {
+                            const cellText = cell.textContent.toLowerCase();
+                            if (!cellText.includes(filter.value)) {
+                                rowMatchesAllFilters = false;
+                            }
+                        } else {
+                            rowMatchesAllFilters = false; // If column doesn't exist for some reason
+                        }
+                    });
+                }
+
+                if (rowMatchesAllFilters) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+             // Check if any rows are visible after filtering, and manage "No matching users" message
+            const visibleRows = Array.from(rows).filter(row => row.style.display !== 'none' && !row.classList.contains('no-data-row'));
+            let noDataRow = usersTableBody.querySelector('.no-data-row'); 
+
+            if (visibleRows.length === 0 && !noDataRow) {
+                const newRow = usersTableBody.insertRow();
+                newRow.classList.add('no-data-row'); // Add a class for easy removal/checking
+                const cell = newRow.insertCell(0);
+                cell.colSpan = usersTable.querySelector('thead tr').children.length; // Span all columns
+                cell.textContent = 'No matching users found.';
+                cell.style.textAlign = 'center';
+                cell.style.color = '#888';
+                cell.style.padding = '20px';
+            } else if (visibleRows.length > 0 && noDataRow) {
+                noDataRow.remove(); // Remove 'no data' message if rows become visible
+            }
+        }
+
+
+        // Function to load a single user's chat history (used when specific student search is active)
+        async function loadChatHistory(userId) {
+            chatDisplay.innerHTML = ''; 
+            copyChatBtn.style.display = 'none'; 
+            currentLoadedConversations = [];
+
+            if (!userId) {
+                chatDisplay.innerHTML = '<p>Please enter or select a student user to view chat history.</p>';
+                return;
+            }
+
+            try {
+                const password = accessPasswordInput.value; 
+                const response = await fetch(`${CHAT_BACKEND_URL}/api/conversations/${userId}`, { 
+                    headers: { 'x-access-password': password }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    showMessage(errorData.message || 'Failed to load chat history.', true);
+                    return;
+                }
+
+                const conversations = await response.json(); 
+                currentLoadedConversations = conversations; 
+                displayConversationHistory(conversations); 
+
+            } catch (error) {
+                console.error('Error fetching chat history:', error);
+                showMessage('Network error while loading chat history.', true);
+            }
+        }
+
+        // Modified function to display conversations, now handling multiple users and including user info
+        function displayConversationHistory(conversations) {
+            chatDisplay.innerHTML = '';
+            copyChatBtn.style.display = 'block';
+
+            if (conversations.length === 0) {
+                chatDisplay.innerHTML = '<p style="text-align: center; color: #555;">No conversation history found for the selected criteria.</p>';
+                copyChatBtn.style.display = 'none';
+                return;
+            }
+
+            // Group messages by UserID and then by SessionID
+            const groupedByUsers = {};
+            conversations.forEach(msg => {
+                if (!groupedByUsers[msg.UserID]) {
+                    groupedByUsers[msg.UserID] = {
+                        userInfo: { UserID: msg.UserID, FirstName: msg.FirstName, LastName: msg.LastName, Gender: msg.Gender, GradeLevel: msg.GradeLevel },
+                        sessions: {}
+                    };
+                }
+                if (!groupedByUsers[msg.UserID].sessions[msg.SessionID]) {
+                    groupedByUsers[msg.UserID].sessions[msg.SessionID] = [];
+                }
+                groupedByUsers[msg.UserID].sessions[msg.SessionID].push(msg);
+            });
+
+            // Sort users by UserID (or name if preferred)
+            const sortedUserIDs = Object.keys(groupedByUsers).sort((a, b) => parseInt(a) - parseInt(b));
+
+            sortedUserIDs.forEach(userID => {
+                const userData = groupedByUsers[userID];
+                const userInfo = userData.userInfo;
+
+                // Display User Info Header for each user
+                const userHeader = document.createElement('div');
+                userHeader.classList.add('student-info-header');
+                userHeader.textContent = `Student: ${userInfo.FirstName || ''} ${userInfo.LastName || ''} (ID: ${userInfo.UserID}) - Grade: ${userInfo.GradeLevel || 'N/A'}, Gender: ${userInfo.Gender || 'N/A'}`;
+                chatDisplay.appendChild(userHeader);
+
+                // Sort sessions within this user chronologically
+                const sortedSessionIDs = Object.keys(userData.sessions).sort((a, b) => {
+                    const dateA = new Date(userData.sessions[a][0].timestamp);
+                    const dateB = new Date(userData.sessions[b][0].timestamp);
+                    return dateA - dateB;
+                });
+
+                sortedSessionIDs.forEach(sessionID => {
+                    // Sort messages within each session chronologically
+                    const sessionMessages = userData.sessions[sessionID].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                    const sessionHeaderDate = new Date(sessionMessages[0].timestamp);
+                    const formattedSessionDate = sessionHeaderDate.toLocaleString('en-US', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                    });
+
+                    const sessionHeader = document.createElement('div');
+                    sessionHeader.classList.add('chat-timestamp');
+                    sessionHeader.innerHTML = `--- Session Started: ${formattedSessionDate} (ID: ${sessionID}) ---`;
+                    chatDisplay.appendChild(sessionHeader);
+
+                    sessionMessages.forEach(msg => {
+                        const messageContainer = document.createElement('div');
+                        messageContainer.classList.add('chat-message-container');
+
+                        const messageBubble = document.createElement('div');
+                        messageBubble.classList.add('chat-message');
+
+                        if (msg.UserMessage) {
+                            messageBubble.classList.add('student-message');
+                            messageBubble.textContent = `Student: ${msg.UserMessage}`;
+                        } else if (msg.AIMessage) {
+                            messageBubble.classList.add('ai-message');
+                            messageBubble.textContent = `AI: ${msg.AIMessage}`;
+                        }
+
+                        const date = new Date(msg.timestamp);
+                        const formattedTime = date.toLocaleString('en-US', {
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                        });
+
+                        const timestampForMsg = document.createElement('div');
+                        timestampForMsg.classList.add('chat-timestamp');
+                        timestampForMsg.textContent = `[${formattedTime}]`;
+
+                        messageContainer.appendChild(messageBubble);
+                        messageContainer.appendChild(timestampForMsg);
+                        chatDisplay.appendChild(messageContainer);
+                    });
+                });
+            });
+            chatDisplay.scrollTop = chatDisplay.scrollHeight; // Scroll to bottom
+        }
+
+        // --- Event Listener for Loading Chat from Input (for specific student search) ---
+        loadChatBtn.addEventListener('click', () => {
+            const inputText = studentNameInput.value.trim();
+            if (!inputText) {
+                showMessage('Please type a student name or ID to load chat.', true);
+                return;
+            }
+
+            let foundUserId = null;
+
+            const matchedOption = Array.from(studentNamesDatalist.querySelectorAll('option')).find(option =>
+                option.value.toLowerCase() === inputText.toLowerCase()
+            );
+
+            if (matchedOption) {
+                foundUserId = matchedOption.getAttribute('data-userid');
+            } else {
+                const idMatch = inputText.match(/\(ID:\s*([^)]+)\)/i);
+                if (idMatch && idMatch[1]) {
+                    foundUserId = idMatch[1];
+                } else {
+                    const lowercaseInput = inputText.toLowerCase();
+                    const userByPartialMatch = usersData.find(user =>
+                        (user.FirstName && user.FirstName.toLowerCase().includes(lowercaseInput)) ||
+                        (user.LastName && user.LastName.toLowerCase().includes(lowercaseInput)) ||
+                        (String(user.UserID).toLowerCase() === lowercaseInput)
+                    );
+                    if (userByPartialMatch) {
+                        foundUserId = userByPartialMatch.UserID;
+                    }
+                }
+            }
+
+            if (foundUserId) {
+                loadChatHistory(foundUserId); // Call existing function for single user
+            } else {
+                showMessage('Student not found. Please enter a valid name or ID from the suggestions.', true);
+            }
+        });
+
+
+        copyChatBtn.addEventListener('click', () => {
+            let chatContent = '';
+            
+            if (currentLoadedConversations.length === 0) {
+                showMessage('No conversations to copy.', true);
+                return;
+            }
+
+            // Group messages by UserID and then by SessionID for consistent copy output
+            const groupedForCopy = {};
+            currentLoadedConversations.forEach(msg => {
+                if (!groupedForCopy[msg.UserID]) {
+                    groupedForCopy[msg.UserID] = {
+                        userInfo: { UserID: msg.UserID, FirstName: msg.FirstName, LastName: msg.LastName, Gender: msg.Gender, GradeLevel: msg.GradeLevel },
+                        sessions: {}
+                    };
+                }
+                if (!groupedForCopy[msg.UserID].sessions[msg.SessionID]) {
+                    groupedForCopy[msg.UserID].sessions[msg.SessionID] = [];
+                }
+                groupedForCopy[msg.UserID].sessions[msg.SessionID].push(msg);
+            });
+
+            const sortedUserIDsForCopy = Object.keys(groupedForCopy).sort((a, b) => parseInt(a) - parseInt(b));
+
+            sortedUserIDsForCopy.forEach(userID => {
+                const userData = groupedForCopy[userID];
+                const userInfo = userData.userInfo;
+                chatContent += `--- Student: ${userInfo.FirstName || ''} ${userInfo.LastName || ''} (ID: ${userInfo.UserID}) - Grade: ${userInfo.GradeLevel || 'N/A'}, Gender: ${userInfo.Gender || 'N/A'} ---\n\n`;
+
+                const sortedSessionIDsForCopy = Object.keys(userData.sessions).sort((a, b) => {
+                    return new Date(userData.sessions[a][0].timestamp) - new Date(userData.sessions[b][0].timestamp);
+                });
+
+                sortedSessionIDsForCopy.forEach(sessionID => {
+                    const sessionMessages = userData.sessions[sessionID].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                    const sessionHeaderDate = new Date(sessionMessages[0].timestamp);
+                    const formattedSessionDate = sessionHeaderDate.toLocaleString('en-US', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                    });
+                    chatContent += `--- Session Started: ${formattedSessionDate} (ID: ${sessionID}) ---\n`;
+
+                    sessionMessages.forEach(msg => {
+                        const date = new Date(msg.timestamp);
+                        const formattedTime = date.toLocaleString('en-US', {
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                        });
+
+                        if (msg.UserMessage) {
+                            chatContent += `[${formattedTime}] Student: ${msg.UserMessage}\n`;
+                        }
+                        if (msg.AIMessage) {
+                            chatContent += `[${formattedTime}] AI: ${msg.AIMessage}\n`;
+                        }
+                    });
+                    chatContent += '\n'; // Add an extra line break between sessions for clarity
+                });
+            });
+
+            chatContent = chatContent.trim(); // Final trim
+
+            navigator.clipboard.writeText(chatContent)
+                .then(() => showMessage('Conversation copied to clipboard!', false))
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    showMessage('Failed to copy conversation.', true);
+                });
+        });
+
+        // Initialize by showing password entry
+        passwordEntryDiv.style.display = 'flex';
+        contentArea.style.display = 'none';
+
+    </script>
+</body>
+</html>
