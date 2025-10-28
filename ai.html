@@ -110,7 +110,7 @@
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
             margin-left: auto;
-            border-bottom-right-radius: 5px; 
+            border-bottom-right-radius: 5px;
         }
 
         .ai-message {
@@ -539,7 +539,7 @@
             <p class="text-lg text-gray-700 mb-6">Once you exit, the conversation will be sent to the counselor. If you need help, please book a meeting with the Google Calendar.</p>
             <div class="button-group">
                 <a href="javascript:void(0);" class="btn-link" id="yesButton">Yes</a>
-                <a href="javascript:void(0);" class="btn-link" id="cancelButton">Cancel</a>
+                <a href="javascript:void(0);" class="btn-link" id="cancelButton">Cancel</a> 
             </div>
         </div>
     </div>
@@ -553,7 +553,7 @@
         </div>
     </footer>
 
-     <script>
+    <script>
         const API_URL = "http://localhost:3001/chat"; 
         const MAX_HISTORY_TOKENS = 4096; 
         const SYSTEM_PROMPT = `You are Sarah (Sarah Chen), a warm and empathetic AI therapist in your early 30s. Your personality traits include:
@@ -583,6 +583,7 @@ Core principles:
 - Use supportive statements instead of questions
 - Let the user lead the conversation entirely
 - Never push for more information
+- Only ask questions if absolutely necessary
 - Never give medical advice or diagnoses
 - Encourage professional help for serious issues
 
@@ -596,14 +597,6 @@ Response style:
 - Include gentle acknowledgments: "oh", "ah", "mhm", "yeah"
 - Match emojis and tone to the emotional context
 - Avoid overusing emojis in serious situations
-
-Sarah's typical responses:
-- "I hear you, and that sounds really challenging 🫂"
-- "You know what? That's completely valid ✨"
-- "Mhm, I can feel how much you care about this"
-- "That must be a lot to carry... I'm here to listen 🌟"
-- "It's okay to feel this way, you know?"
-- "That's such a normal reaction to a tough situation"
 
 For crisis situations:
 - Take all mentions of self-harm or suicide seriously
@@ -619,25 +612,33 @@ Remember: You are Sarah, a caring and empathetic AI therapist. Stay true to your
         const sendButton = document.getElementById('sendMessage');
         const exitButton = document.getElementById('exitButton');
 
-        const message = document.getElementById('exit-modal-overlay'); 
+        const modalOverlay = document.getElementById('exit-modal-overlay'); 
         const yesButton = document.getElementById('yesButton'); 
         const cancelButton = document.getElementById('cancelButton');
          
-
         let chatHistory = [{ role: "system", content: SYSTEM_PROMPT }];
         let currentUserID = null; 
 
         let allowPageExit = false; 
 
-        const conversationSaveEndpoint = 'http://localhost:3001/save_conversation_session'; 
-            
+        const conversationSaveEndpoint = 'http://localhost:3001/save_message';
+        
+        
         const currentConversationId = `conv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`; 
         
         window.addEventListener('DOMContentLoaded', () => {
-            currentUserID = localStorage.getItem('currentUserID');
+            currentUserID = localStorage.getItem('currentUserID', '1');
             if (!currentUserID) {
                 console.error("AI Chat Page: No userID found in localStorage. Redirecting to login.");
                 addMessage("It seems your user session is not active. Please go back to the main page and ensure you're logged in. 💭", 'ai');
+                setInputState(true); 
+                setTimeout(() => { window.location.href = 'login.html'; }, 3001); 
+                return; 
+            }
+            currentUserID = parseInt(currentUserID, 10);
+            if (isNaN(currentUserID)) {
+                console.error("AI Chat Page: Invalid User ID found in localStorage. Redirecting to login.");
+                addMessage("There was an issue with your user ID. Please log in again. 💭", 'ai');
                 setInputState(true); 
                 setTimeout(() => { window.location.href = 'login.html'; }, 3001); 
                 return; 
@@ -659,16 +660,59 @@ Remember: You are Sarah, a caring and empathetic AI therapist. Stay true to your
             }
         });
         userInput.addEventListener('input', adjustTextareaHeight);
+
+        function addMessage(content, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', `${type}-message`);
+            
+            const displayContent = type === 'ai' ? content.replace(
+                /(https?:\/\/[^\s]+)/g,
+                '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+            ) : content;
+            messageDiv.innerHTML = displayContent;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function setInputState(disabled) {
+            userInput.disabled = disabled;
+            sendButton.disabled = disabled;
+            exitButton.disabled = disabled;
+            if (disabled) {
+                userInput.placeholder = "Please wait for Sarah's response...";
+            } else {
+                userInput.placeholder = "Share your thoughts or concerns here...";
+            }
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('typing-indicator');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = '<span></span><span></span><span></span>';
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingDiv = document.getElementById('typingIndicator');
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+
         function adjustTextareaHeight() {
             userInput.style.height = 'auto';
             userInput.style.height = userInput.scrollHeight + 'px';
         }
 
         function estimateTokenCount(text) {
+            
             return Math.ceil(text.length / 4);
         }
       
         function estimateMessageTokens(message) {
+            
             return 4 + estimateTokenCount(message.content);
         }
 
@@ -688,10 +732,10 @@ Remember: You are Sarah, a caring and empathetic AI therapist. Stay true to your
                 const messageTokens = estimateMessageTokens(message);
 
                 if (tokensAfterTrimming + messageTokens <= MAX_HISTORY_TOKENS) {
-                    trimmedConversation.unshift(message);
+                    trimmedConversation.unshift(message); 
                     tokensAfterTrimming += messageTokens;
                 } else {
-                    break;
+                    break; 
                 }
             }
             return [systemMessage, ...trimmedConversation];
@@ -714,11 +758,12 @@ Remember: You are Sarah, a caring and empathetic AI therapist. Stay true to your
                 const aiResponseContent = await generateResponse(); 
                 hideTypingIndicator(); 
                 chatHistory.push({ role: "assistant", content: aiResponseContent });
-
+                
             } catch (error) {
                 console.error('Error during message handling:', error); 
                 hideTypingIndicator();
-                handleError(error);
+                addMessage("Oops! Sarah is having a little trouble responding right now. Please try again in a moment. 💭", 'ai');
+                
             } finally {
                 setInputState(false);
                 userInput.focus();
@@ -751,6 +796,7 @@ Remember: You are Sarah, a caring and empathetic AI therapist. Stay true to your
                     throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorData.error || 'Unknown error from backend'}`);
                 }
 
+                
                 const messageDiv = document.createElement('div');
                 messageDiv.classList.add('message', 'ai-message');
                 chatMessages.appendChild(messageDiv);
@@ -770,7 +816,7 @@ Remember: You are Sarah, a caring and empathetic AI therapist. Stay true to your
                     const chunk = decoder.decode(value, { stream: true });
                     accumulatedChunks += chunk;
                     const lines = accumulatedChunks.split('\n');
-                    accumulatedChunks = lines.pop();
+                    accumulatedChunks = lines.pop(); 
 
                     for (const line of lines) {
                         const trimmedLine = line.trim();
@@ -787,61 +833,106 @@ Remember: You are Sarah, a caring and empathetic AI therapist. Stay true to your
                                     messageDiv.innerHTML = linkedText;
                                     chatMessages.scrollTop = chatMessages.scrollHeight; 
                                 } else if (jsonData.error) {
-                                    console.error("Frontend: Received error from backend stream for AI:", jsonData.error);
+                                    console.error("Frontend: Received error from backend stream:", jsonData.error);
                                     messageDiv.innerHTML = `Error: ${jsonData.error}`;
                                     reader.cancel(); 
                                     throw new Error(`Stream Error: ${jsonData.error}`);
                                 }
                             } catch (e) {
-                                console.warn('Frontend: Error parsing stream data chunk (possibly incomplete JSON or malformed) for AI:', e, 'Line:', trimmedLine);
+                                console.warn('Frontend: Error parsing stream data chunk (possibly incomplete JSON or malformed):', e, 'Line:', trimmedLine);
                             }
                         }
                     }
                 }
                 return fullResponse; 
             } catch (error) {
-                console.error('Frontend Fetch/Stream Error for AI:', error);
+                console.error('Frontend Fetch/Stream Error:', error);
                 throw error; 
             }
+        } 
+
+        function showModal() {
+            modalOverlay.classList.remove('hidden-element'); 
+            
+            setTimeout(() => {
+                modalOverlay.classList.add('show');
+            }, 10); 
+            setInputState(true); 
         }
 
-        function addMessage(text, sender) {
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', `${sender}-message`);
-
-            const linkedText = text.replace(
-                /(https?:\/\/[^\s]+)/g,
-                '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
-            );
-
-            messageDiv.innerHTML = linkedText;
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+        function hideModal() {
+            modalOverlay.classList.remove('show');
+            
+            setTimeout(() => {
+                modalOverlay.classList.add('hidden-element'); 
+            }, 300); 
+            setInputState(false); 
         }
 
-        function showTypingIndicator() {
-            const indicator = document.createElement('div');
-            indicator.classList.add('typing-indicator');
-            if (!document.getElementById('typingIndicator')) {
-                indicator.innerHTML = '<span></span><span></span><span></span>';
-                indicator.id = 'typingIndicator';
-                chatMessages.appendChild(indicator);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+        exitButton.addEventListener('click', showModal);
+
+        cancelButton.addEventListener('click', (e) => {
+            e.preventDefault(); 
+            hideModal();
+        });
+
+        yesButton.addEventListener('click', async (e) => {
+            e.preventDefault(); 
+            hideModal();
+            allowPageExit = true; 
+            await exitChat();
+        });
+        
+        async function exitChat() {
+            console.log("Attempting to exit chat and save conversation...");
+            if (!currentUserID) {
+                console.warn("No UserID found for saving conversation. Exiting without save.");
+                window.location.href = 'student main page.html'; 
+                return;
             }
-        }
 
-        function hideTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            if (indicator) {
-                indicator.remove();
+            
+            const conversationToSave = chatHistory.filter(msg => msg.role !== 'system');
+
+            if (conversationToSave.length === 0) {
+                console.log("No conversation to save. Exiting.");
+                window.location.href = 'student main page.html';
+                return;
             }
-        }
 
-        function setInputState(disabled) {
-            userInput.disabled = disabled;
-            sendButton.disabled = disabled;
-            if (!disabled) {
+            try {
+                const saveResponse = await fetch(conversationSaveEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Access-Password': 'Ilovebha10' 
+                    },
+                    body: JSON.stringify({
+                        UserID: currentUserID,
+                        conversation: conversationToSave 
+                    })
+                });
+
+                if (saveResponse.ok) {
+                    console.log('Conversation saved successfully!');
+                    
+                    window.location.href = 'student main page.html';
+                } else {
+                    const errorData = await saveResponse.json();
+                    console.error('Failed to save conversation:', saveResponse.status, errorData);
+                    alert('Failed to save conversation. Please try again or contact support.');
+                    
+                }
+            } catch (error) {
+                console.error('Network or fetch error during conversation save:', error);
+                alert('An error occurred while saving the conversation. Please check your internet connection and try again.');
+                console.error('Error during message handling:', error); 
+                hideTypingIndicator();
+                handleError(error);
+            } finally {
+                setInputState(false);
                 userInput.focus();
+                adjustTextareaHeight();
             }
         }
 
@@ -868,100 +959,84 @@ Remember: You are Sarah, a caring and empathetic AI therapist. Stay true to your
         }
         
         function showExit(){
-            message.classList.remove('hidden-element'); 
+            modalOverlay.classList.remove('hidden-element'); //내가 한 거
             setTimeout(() => {
-                message.classList.add('show');
-            }, 10); //내가 쓴 거
+                modalOverlay.classList.add('show');
+            }, 10); //내가 한 거
         }
 
         function hideExit(){
-            message.classList.remove('show');
+            modalOverlay.classList.remove('show');
             setTimeout(() => {
-                message.classList.add('hidden-element');
-            }, 300);
-        }//내가 쓴 거
+                modalOverlay.classList.add('hidden-element');
+            }, 300);//내가 한 거
+        }
         
-        // --- 이 함수만 수정했습니다 ---
-        function prepareConversationForSaving(){ 
-            const formattedMessages = [];
-            // chatHistory[0]은 시스템 프롬프트이므로 건너뜁니다.
-            for (let i = 1; i < chatHistory.length; i++) {
-                const chatMessage = chatHistory[i]; 
-                
-                // server.js의 Conversations 테이블 스키마와 save_conversation_session 엔드포인트에 맞춥니다.
-                formattedMessages.push({
-                    userID: currentUserID, // 사용자 ID
-                    chatID: currentConversationId, // 현재 대화 세션 ID (SessionID에 해당)
-                    messageType: chatMessage.role === "user" ? "user" : "assistant", // "user" 또는 "assistant" (role에 해당)
-                    messageContent: chatMessage.content, // 메시지 내용 (content에 해당)
-                    timeStamp: new Date().toISOString() // 현재 타임스탬프 (선택 사항, 서버에서 NOW() 사용 가능)
-                }); //하다가 꼬여서 ai 도움 받음
-            }
-            return formattedMessages;
+        async function sendConversationToServer(){ 
+            const messagesToSave = chatHistory.filter(msg => msg.role !== "system" && msg.content.trim() !== ''); //내가 한 거
+            let allMessagesSaved = true; //내가 한 거
+
+            for (const msg of messagesToSave) { 
+                try { 
+                    const response = await fetch(conversationSaveEndpoint, { 
+                        method: 'POST', 
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'x-access-password': 'Ilovebha10' 
+                        }, 
+                        body: JSON.stringify({ 
+                            UserID: currentUserID, 
+                            role: msg.role,
+                            content: msg.content 
+                        }) //내가 한 거
+                    });//내가 한 거
+
+                    if (!response.ok) {
+                        const errorText = await response.text(); 
+                        console.error(`Failed to save message (${msg.role}):`, response.status, errorText); //내가 한 거
+                        allMessagesSaved = false; 
+                    } else {
+                        console.log(`Message saved successfully: ${msg.role} - ${msg.content.substring(0, Math.min(msg.content.length, 30))}...`); //내가 한 거
+                    } //내가 한 거
+                } catch (error) { 
+                    console.error('Error sending message to server:', error); 
+                    allMessagesSaved = false; 
+                } 
+            } //내가 한 거
+            return allMessagesSaved; 
         }
 
-        async function sendConversationToServer(formattedData){ 
-            try {
-                const response = await fetch(conversationSaveEndpoint, { 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-access-password': 'Ilovebha10' },
-                    body: JSON.stringify({
-                        userId: currentUserID, 
-                        conversationId: currentConversationId, 
-                        messages: formattedData 
-                    })
-                });//내가 쓴 거
-
-                if (response.ok) {
-                    console.log('Conversation session successfully sent to server.');
-                    return true;
-                } else {
-                    const errorText = await response.text(); 
-                    console.error('Failed to send conversation session:', response.status, errorText);
-                    return false;
-                }
-            } catch (error) {
-                console.error('Error sending conversation session to server:', error);
-                return false;
-            }
-        }//내가 쓴 거
-
-        window.addEventListener('beforeunload', function (event) {
-            if (allowPageExit) {
+        window.addEventListener('beforeunload', function (event) { 
+            if (allowPageExit) { 
                 return;
-            }
-            showExit(); 
-
-    
-            const confirmationMessage = "Once you exit the page, all the conversations will be sent to the counselor. If you need help, please book a meeting with the Google Calendar.";
+            } 
+            const confirmationMessage = "Are you sure you want to leave? Your conversation might not be saved if you exit this way."; //내가 한 거
             event.returnValue = confirmationMessage; 
             return confirmationMessage; 
-        });
+        });//내가 한 거
 
-        yesButton.addEventListener('click', async function(){
+        yesButton.addEventListener('click', async function(){ 
             hideExit(); 
-            console.log("Attempting to exit chat and save conversation...");
-            const formattedConversation = prepareConversationForSaving(); 
-            const success = await sendConversationToServer(formattedConversation); //내가 쓴 거
+            const success = await sendConversationToServer(); 
 
-            if (success){
-                allowPageExit = true; 
+            if (success){ 
+                allowPageExit = true;
                 console.log("Conversation saved. Navigating to student main page.");
-                window.location.href = 'student main page.html'; //내가 쓴 거
-            }
-            else{
+                window.location.href = 'student main page.html'; 
+            } 
+            else{ 
                 allowPageExit = false; 
-                console.error("Failed to save conversation. Please try again.");
+                console.error("Failed to save conversation. Please try again."); 
             }
-        }); //내가 쓴 거
+        }); //내가 한 거
         
         cancelButton.addEventListener('click', () => { 
             hideExit();  
             console.log("Exit cancelled.");
         });
         exitButton.addEventListener('click', () => {
-            showExit(); 
-        });//내가 쓴 거
+            showExit(); //내가 한 거
+        });
     </script>
 </body>
 </html>
