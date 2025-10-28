@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Sign In</title>
+    <style>
+        /* Reset default browser margins and paddings, apply border-box sizing */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* Body styles: Full viewport height, light gray background, flexbox for vertical centering, default sans-serif font */
+        body {
+            min-height: 100vh;
+            background: #eee;
+            display: flex;
+            font-family: sans-serif;
+        }
+        /* Container for the form: Auto margins for horizontal centering, fixed width with max-width for responsiveness */
+        .container {
+            margin: auto;
+            width: 500px;
+            max-width:90%;
+        }
+        /* Form styling: Padding, white background, rounded corners, subtle box shadow */
+        .container form {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 8px 16px rgba(0,0,0,.3);
+        }
+        /* Form heading (H1) styling: Centered text, bottom margin, dark gray color */
+        .container form h1 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #222;
+        }
+        /* Form control (input fields) styling: Full width, fixed height, white background, rounded corners, silver border, vertical margin, horizontal padding */
+        .container form .form-control {
+            width: 100%;
+            height: 40px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid silver;
+            margin: 10px 0 18px 0;
+            padding: 0 10px;
+        }
+        /* Style for select elements to match form controls' appearance, including a custom dropdown arrow */
+        .container form select.form-control {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+        }
+
+        /* Submit button styling: Horizontally centered, fixed width and height, no border/outline, blue background, pointer cursor, uppercase text, white color, rounded corners, smooth transition for hover */
+        .container form .btn {
+            margin-left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 34px;
+            border: none;
+            outline: none;
+            background:#3390ff;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+            color: white;
+            border-radius: 4px;
+            transition: .3s;
+            margin-top: 20px;
+        }
+        /* Submit button hover effect: Reduced opacity */
+        .container form .btn:hover {
+            opacity: .7;
+        }
+
+        /* Dropdown specific styles (adjusted for form integration, not directly used in this specific form) */
+        .dropdown {
+            width: 100%;
+            margin-top: 10px;
+            margin-bottom: 18px;
+            position: relative;
+        }
+
+        .dropdown .content {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form id="signInForm" action="#" method="POST">
+            <h1>Teacher Sign In Form</h1>
+            <div class="form-group">
+                <label for="email">Email ID</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+             <div class="form-group">
+                <label for="passwordVerification">Password Verification</label>
+                <input type="password" class="form-control" id="passwordVerification" name="passwordVerification" required>
+            </div>
+            <input type="submit" class="btn" value="Sign In">
+
+        </form>
+        <!-- This div is needed for the showMessage function to display messages -->
+        <div id="messageBox" style="display:none;"></div>
+    </div>
+
+    <script>
+    
+        const AUTH_BACKEND_URL = 'http://localhost:3002';
+        const messageBox = document.getElementById('messageBox');
+
+        const signInForm = document.getElementById('signInForm');
+
+        function showMessage(message, isError = false) {// 내가 한 거
+            
+            
+            // Re-initialize messageBox styles on each call to ensure proper display
+            messageBox.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white; /* White background like form-control */
+                color: #333; /* Darker text for readability on white background */
+                padding: 15px 20px; /* Adjusted padding */
+                border-radius: 4px; /* Rounded corners like form-control */
+                border: 1px solid ${isError ? '#f44336' : '#4CAF50'}; /* Border color matches error/success */
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                z-index: 1000;
+                font-family: sans-serif;
+                text-align: center;
+                width: 80%; /* Constrain width */
+                max-width: 350px; /* Max width for larger screens */
+                display: block; /* Make sure it's visible */
+            `;
+            messageBox.textContent = message;
+            
+            // 내가 한 거
+            messageBox.classList.remove('error', 'success');
+            if (isError) {
+                messageBox.classList.add('error');
+            } else {
+                messageBox.classList.add('success');
+            }
+
+            setTimeout(() => {
+                messageBox.style.display = 'none'; 
+            }, 2500); 
+        }
+
+
+        signInForm.addEventListener('submit', async function(event) {// 내가 한 거
+            event.preventDefault(); 
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const passwordVerification = document.getElementById('passwordVerification').value;
+
+            // 내가 한 거
+            if (!email.includes('jieunkim@branksome.asia')) {
+                showMessage('Email address must be from Branksome Hall Asia Account.', true);
+                return;
+            }
+
+            // 여기까지가 내가 한 거
+            if (password !== passwordVerification) {
+                showMessage('Passwords do not match. Please try again.', true);
+                return;
+            }
+
+            console.log('Attempting to save/update credentials via backend:', { email: email, password: password });
+
+            try {
+                // Send data to the backend's /api/register-update endpoint
+                const response = await fetch(`${AUTH_BACKEND_URL}/api/register-update`, {
+                    method: 'POST', // HTTP POST request
+                    headers: {
+                        'Content-Type': 'application/json', // Indicate that the request body is JSON
+                    },
+                    body: JSON.stringify({ email, password }), // Convert email and password to a JSON string
+                });
+
+                const result = await response.json(); // Parse the JSON response from the backend
+
+                if (response.ok) { // Check if the HTTP status code is in the 200 range (success)
+                    showMessage(result.message, false); // Display success message
+                    // Redirect to the login page after successful registration/update
+                    setTimeout(() => {
+                        window.location.href = 'login page.html';
+                    }, 1000); // Small delay to allow the message to be seen
+                } else { // If the HTTP status code is not in the 200 range (error)
+                    showMessage(result.error || 'An unexpected error occurred.', true); // Display error message
+                }
+            } catch (error) { // Catch network errors or issues with the fetch request itself
+                console.error('Network error during registration/update:', error);
+                showMessage('Could not connect to the authentication server. Please ensure the backend is running.', true);
+            }
+        });
+    </script>
+</body>
+</html>

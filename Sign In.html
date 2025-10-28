@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Sign Up</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body{
+            min-height: 100vh;
+            background: #eee;
+            display: flex;
+            font-family: sans-serif;
+        }
+        .container{
+            margin: auto;
+            width: 500px;
+            max-width:90%;
+        }
+        .container form{
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 8px 16px rgba(0,0,0,.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container form h1{
+            text-align: center;
+            margin-bottom: 24px;
+            color: #222;
+        }
+        .container form .form-group {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .container form label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .container form .form-control{
+            width: 100%;
+            height: 40px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid silver;
+            padding: 0 10px;
+            font-size: 16px;
+        }
+
+        .container form select.form-control {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+        }
+
+        .container form .btn{
+            width: 120px;
+            height: 34px;
+            border: none;
+            outline: none;
+            background:#3390ff;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+            color: white;
+            border-radius: 4px;
+            transition: .3s;
+            margin-top: 20px;
+        }
+        .container form .btn:hover{
+            opacity: .7;
+        }
+
+        .dropdown {
+            width: 100%;
+            margin-top: 10px;
+            margin-bottom: 18px;
+            position: relative;
+        }
+        .dropdown .content {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form id="signUpForm" action="#" method="POST">
+            <h1>Student Sign Up Form</h1>
+            <div class="form-group">
+                <label for="firstName">First Name (Optional)</label>
+                <input type="text" class="form-control" id="firstName" name="firstName">
+            </div>
+            <div class="form-group">
+                <label for="lastName">Last Name (Optional)</label>
+                <input type="text" class="form-control" id="lastName" name="lastName">
+            </div>
+
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <select class="form-control" id="gender" name="gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+
+             <div class="form-group">
+                <label for="gradeLevel">Grade Level</label>
+                <select class="form-control" id="gradeLevel" name="gradeLevel" required>
+                    <option value="">Select Grade Level</option>
+                    <option value="Grade 6">Grade 6</option>
+                    <option value="Grade 7">Grade 7</option>
+                    <option value="Grade 8">Grade 8</option>
+                    <option value="Grade 9">Grade 9</option>
+                    <option value="Grade 10">Grade 10</option>
+                    <option value="Grade 11">Grade 11</option>
+                    <option value="Grade 12">Grade 12</option>
+                </select>
+            </div>
+
+            <input type="submit" class="btn" value="Sign Up">
+        </form>
+    </div>
+
+    <script>
+        const signUpForm = document.getElementById('signUpForm');
+
+        signUpForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const gender = document.getElementById('gender').value;
+            const gradeLevel = document.getElementById('gradeLevel').value;
+
+            if (!gender || !gradeLevel) {
+                console.error('Validation Error: Please select your Gender and Grade Level.');
+                return;
+            }
+
+            const uniqueId = crypto.randomUUID();
+            const generatedEmail = `user_${uniqueId}@branksome.asia`;
+            const generatedPassword = Math.random().toString(36).substring(2, 12);
+           
+
+            const formData = {
+                email: generatedEmail,
+                password: generatedPassword,
+                firstName: firstName || null,
+                lastName: lastName || null,
+                gender: gender,
+                // Note: 'gradeLevel' is collected here but your backend's /register endpoint
+                // (which expects 'DOB') does not currently save 'gradeLevel' in the Users table INSERT statement.
+                // If you need to save gradeLevel in the Users table, you'll need to update your
+                // Users table schema (e.g., ADD COLUMN GradeLevel VARCHAR(50);) and
+                // then modify the INSERT statement in server.js to include it.
+                gradeLevel: gradeLevel
+            };
+
+            console.log('Sending Form Data (including generated credentials):', formData);
+
+            try {
+                // FIX: Corrected port from 3002 to 3001 and path from /api/register-update to /register
+                const response = await fetch('http://localhost:3001/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // If your /register endpoint also requires the X-Access-Password, uncomment this:
+                        // 'X-Access-Password': 'Ilovebha10'
+                    },
+                    body: JSON.stringify(formData),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    console.log('Sign-up successful!');
+                    // MySQL AUTO_INCREMENT IDs are typically numbers
+                    if (result && typeof result.userID === 'number' && result.userID > 0) {
+                        localStorage.setItem('currentUserID', result.userID);
+                        console.log('Server-generated UserID stored in localStorage:', result.userID);
+                    } else {
+                        console.warn('Sign-up successful, but UserID was not found or was invalid in the backend response. AI chat may not function correctly.');
+                    }
+                    window.location.href = 'student main page.html';
+                } else {
+                    console.error('Sign-up failed:', result.error || 'Unknown error.', result.details || '');
+                    // You might want to display result.error to the user on the page
+                }
+            } catch (error) {
+                console.error('Network or fetch error: An error occurred while connecting to the server. Please ensure the backend is running.', error);
+            }
+        });
+    </script>
+</body>
+</html>

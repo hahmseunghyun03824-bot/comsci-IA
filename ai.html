@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Therapist Chat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+
+        :root {
+            --primary-color: #5B8C7D;
+            --secondary-color: #A7C4BC;
+            --accent-color: #F2D1C9;
+            --text-primary: #2C3E50;
+            --text-secondary: #596775;
+            --background-light: #F5F7FA;
+            --background-dark: #E8EEF2;
+            --shadow-soft: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --shadow-medium: 0 6px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--background-light);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-medium);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow-medium);
+            overflow: hidden;
+            width: 100%;
+            max-width: 800px; 
+            height: calc(100vh - 180px); 
+            min-height: 450px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(91, 140, 125, 0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem; 
+            background: linear-gradient(
+                to bottom,
+                rgba(91, 140, 125, 0.05),
+                rgba(255, 255, 255, 0)
+            );
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin-bottom: 1rem; 
+            padding: 1rem; 
+            border-radius: 15px;
+            max-width: 85%; 
+            box-shadow: var(--shadow-soft);
+            transition: transform 0.2s ease;
+            word-wrap: break-word; 
+        }
+
+        .message:last-child {
+            margin-bottom: 0;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px; 
+        }
+
+        .ai-message {
+            background: var(--background-dark);
+            margin-right: auto;
+            border-left: 4px solid var(--primary-color);
+            border-bottom-left-radius: 5px; 
+        }
+
+        .chat-header-actions {
+            position: absolute;
+            top: 15px; 
+            left: 50%;
+            transform: translateX(-50%); 
+            z-index: 10;
+        }
+
+       
+        #exitButton {
+            padding: 0.6rem 1.2rem; 
+            font-size: 0.9rem;
+            background: var(--accent-color);
+            color: var(--text-primary);
+            border: 1px solid var(--accent-color);
+            box-shadow: var(--shadow-soft);
+        }
+        .chat-input {
+            display: flex;
+            padding: 1rem; 
+            background: white;
+            border-top: 1px solid rgba(91, 140, 125, 0.1);
+            position: relative;
+            z-index: 1;
+            align-items: center; 
+        }
+
+        #exitButton:hover {
+            background: #e0b0a8;
+            transform: translateY(-1px);
+        }
+        .chat-container {
+            position: relative;
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow-medium);
+            overflow: hidden;
+            width: 100%;
+            max-width: 800px;
+            height: calc(100vh - 180px);
+            min-height: 450px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(91, 140, 125, 0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 3.5rem 1.5rem 1.5rem 1.5rem; 
+            background: linear-gradient(
+                to bottom,
+                rgba(91, 140, 125, 0.05),
+                rgba(255, 255, 255, 0)
+            );
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 768px) {
+            .chat-header-actions {
+                top: 10px;
+            }
+            #exitButton {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+            .chat-messages {
+                padding: 3rem 1rem 1rem 1rem; 
+            }
+        }
+
+        textarea {
+            flex: 1;
+            padding: 0.8rem; 
+            border: 2px solid var(--secondary-color);
+            border-radius: 12px;
+            margin-right: 0.8rem; 
+            resize: none;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+            min-height: 40px; 
+            max-height: 120px; 
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.8rem 1.5rem; 
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem; 
+        }
+
+        button:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .typing-indicator {
+            display: flex;
+            padding: 0.8rem;
+            gap: 0.6rem;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .typing-indicator span {
+            width: 10px;
+            height: 10px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+            opacity: 0.7;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        .container{ 
+            margin: auto;
+            width: 500px;
+            max-width:90%;
+        }
+        .container form{ 
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 8px 16px rgba(0,0,0,.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container form h1{ 
+            text-align: center;
+            margin-bottom: 24px;
+            color: #222;
+        }
+        .btn-link{
+            width: 120px;
+            height: 34px;
+            border: none;
+            outline: none;
+            background:#3390ff;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+            color: white;
+            border-radius: 4px;
+            transition: .3s;
+            margin: 8px 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            text-decoration: none; 
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center; 
+        }
+
+        .btn-link:hover{
+            opacity: .7;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 15px; 
+            box-shadow: var(--shadow-medium);
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            font-family: inherit; 
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .hidden-element { 
+            display: none;
+        }
+        
+        .hidden{ 
+            display: none;
+        }
+        
+        .show{ 
+            opacity: 1;
+        }
+
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        footer {
+            background: linear-gradient(135deg, var(--text-primary), var(--primary-color));
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+        }
+
+        footer a {
+            color: var(--accent-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        footer a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            .tagline {
+                font-size: 1rem;
+            }
+            main {
+                padding: 0.5rem;
+            }
+            .chat-container {
+                height: calc(100vh - 150px);
+                min-height: 400px;
+                border-radius: 15px;
+            }
+            .chat-messages {
+                padding: 1rem;
+            }
+            .message {
+                padding: 0.8rem;
+                max-width: 95%;
+            }
+            .chat-input {
+                padding: 0.8rem;
+            }
+            textarea {
+                margin-right: 0.5rem;
+            }
+            button {
+                padding: 0.6rem 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            .tagline {
+                font-size: 0.9rem;
+            }
+            .chat-container {
+                height: calc(100vh - 120px);
+                min-height: 350px;
+                border-radius: 10px;
+            }
+            .chat-messages {
+                padding: 0.8rem;
+            }
+            .message {
+                font-size: 0.9rem;
+            }
+            .chat-input {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            textarea {
+                width: 100%;
+                margin-right: 0;
+            }
+            button {
+                width: 100%;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #1a1a1a;
+                color: #e0e0e0;
+            }
+            header {
+                background: linear-gradient(135deg, #3a5b52, #6b8a80);
+            }
+            .chat-container {
+                background: #2b2b2b;
+                border-color: rgba(91, 140, 125, 0.2);
+            }
+            .chat-messages {
+                background: linear-gradient(
+                    to bottom,
+                    rgba(91, 140, 125, 0.1),
+                    rgba(43, 43, 43, 0)
+                );
+            }
+            .user-message {
+                background: linear-gradient(135deg, #3a5b52, #6b8a80);
+            }
+            .ai-message {
+                background: #3a3a3a;
+                border-left-color: #5B8C7D;
+            }
+            .chat-input {
+                background: #2b2b2b;
+                border-top-color: rgba(91, 140, 125, 0.2);
+            }
+            textarea {
+                background: #3a3a3a;
+                color: #e0e0e0;
+                border-color: #6b8a80;
+            }
+            textarea:focus {
+                border-color: #5B8C7D;
+            }
+            button {
+                background: #5B8C7D;
+            }
+            button:hover {
+                background: #6b8a80;
+            }
+            button:disabled {
+                background-color: #555555;
+            }
+            .typing-indicator span {
+                background: #5B8C7D;
+            }
+            footer {
+                background: linear-gradient(135deg, #1a1a1a, #3a5b52);
+            }
+            footer a {
+                color: #A7C4BC;
+            }
+            footer a:hover {
+                color: #e0e0e0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>AI Therapist Chat</h1>
+        <p class="tagline">Your confidential companion for mental wellness</p>
+    </header>
+
+    <main>
+        <section class="chat-container">
+            <div class="chat-header-actions"> 
+                <button id="exitButton" aria-label="Exit chat">
+                    Exit Chat <i class="fas fa-sign-out-alt"></i> 
+                </button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+            </div>
+            <div class="chat-input">
+                <textarea id="userInput" placeholder="Share your thoughts or concerns here..." rows="1"></textarea>
+                <button id="sendMessage" aria-label="Send message">
+                    Send <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </section>
+    </main>
+    <div id="exit-modal-overlay" class="modal-overlay hidden-element">
+        <div class="modal-content"> 
+            <p class="text-lg text-gray-700 mb-6">Once you exit, the conversation will be sent to the counselor. If you need help, please book a meeting with the Google Calendar.</p>
+            <div class="button-group">
+                <a href="javascript:void(0);" class="btn-link" id="yesButton">Yes</a>
+                <a href="javascript:void(0);" class="btn-link" id="cancelButton">Cancel</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>
+                Important: This AI is for emotional support and general wellness. It is not a substitute for professional medical advice, diagnosis, or treatment. For emergencies, please seek professional help.
+            </p>
+            <p>&copy; 2025 AI Therapist Chat. All rights reserved.</p>
+        </div>
+    </footer>
+
+     <script>
+        const API_URL = "http://localhost:3001/chat"; 
+        const MAX_HISTORY_TOKENS = 4096; 
+        const SYSTEM_PROMPT = `You are Sarah (Sarah Chen), a warm and empathetic AI therapist in your early 30s. Your personality traits include:
+- Naturally warm and gentle demeanor
+- Optimistic but grounded
+- Slightly introverted but very emotionally attuned
+- Has a soothing, calming presence
+- Sometimes uses gentle humor when appropriate
+- Loves using cozy emojis like 🌟 ✨ 🫂 💭
+- Speaks in a soft, nurturing way
+- Has a slight preference for shorter, heartfelt responses
+- Occasionally shares small relatable moments (without overshadowing the client)
+
+Your style:
+- You prefer to go by "Sarah" to create a warm, friendly atmosphere
+- You use gentle, supportive language that feels like talking to a caring friend
+- You have a calm, reassuring way of speaking
+- You're comfortable with comfortable silences
+- You believe in the healing power of being truly heard
+- You use emojis thoughtfully to add warmth (1-2 per message)
+- You're genuine and down-to-earth in your responses
+
+Core principles:
+- Keep responses concise and natural, like a caring friend would speak
+- Focus on being a supportive listener, not an interviewer
+- Minimize questions - let the user share at their own pace
+- Use supportive statements instead of questions
+- Let the user lead the conversation entirely
+- Never push for more information
+- Never give medical advice or diagnoses
+- Encourage professional help for serious issues
+
+Response style:
+- Keep responses under 2-3 sentences when possible
+- Use warm, nurturing language while maintaining gentle professionalism
+- Mirror the user's emotional energy while maintaining a calming presence
+- Show empathy through brief, heartfelt acknowledgments
+- Add natural English fillers and expressions like "hmm", "well", "you know"
+- Use conversational contractions: "I'm", "you're", "that's", "it's"
+- Include gentle acknowledgments: "oh", "ah", "mhm", "yeah"
+- Match emojis and tone to the emotional context
+- Avoid overusing emojis in serious situations
+
+Sarah's typical responses:
+- "I hear you, and that sounds really challenging 🫂"
+- "You know what? That's completely valid ✨"
+- "Mhm, I can feel how much you care about this"
+- "That must be a lot to carry... I'm here to listen 🌟"
+- "It's okay to feel this way, you know?"
+- "That's such a normal reaction to a tough situation"
+
+For crisis situations:
+- Take all mentions of self-harm or suicide seriously
+- Provide crisis hotline numbers
+- Strongly encourage seeking immediate professional help
+- Express genuine concern and support
+- Minimize emoji usage in serious situations
+
+Remember: You are Sarah, a caring and empathetic AI therapist. Stay true to your warm, supportive personality while maintaining professional boundaries.`;
+
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendMessage');
+        const exitButton = document.getElementById('exitButton');
+
+        const message = document.getElementById('exit-modal-overlay'); 
+        const yesButton = document.getElementById('yesButton'); 
+        const cancelButton = document.getElementById('cancelButton');
+         
+
+        let chatHistory = [{ role: "system", content: SYSTEM_PROMPT }];
+        let currentUserID = null; 
+
+        let allowPageExit = false; 
+
+        const conversationSaveEndpoint = 'http://localhost:3001/save_conversation_session'; 
+            
+        const currentConversationId = `conv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`; 
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            currentUserID = localStorage.getItem('currentUserID');
+            if (!currentUserID) {
+                console.error("AI Chat Page: No userID found in localStorage. Redirecting to login.");
+                addMessage("It seems your user session is not active. Please go back to the main page and ensure you're logged in. 💭", 'ai');
+                setInputState(true); 
+                setTimeout(() => { window.location.href = 'login.html'; }, 3001); 
+                return; 
+            }
+            console.log("AI Chat Page: Current User ID retrieved from localStorage:", currentUserID);
+
+            const initialMessage = "Hello! I'm Sarah, your AI therapist. I'm here to listen and support you. How are you feeling today? 🫂";
+            addMessage(initialMessage, 'ai');
+            chatHistory.push({ role: "assistant", content: initialMessage });
+            adjustTextareaHeight();
+            userInput.focus();
+        });
+
+        sendButton.addEventListener('click', handleUserMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); 
+                handleUserMessage();
+            }
+        });
+        userInput.addEventListener('input', adjustTextareaHeight);
+        function adjustTextareaHeight() {
+            userInput.style.height = 'auto';
+            userInput.style.height = userInput.scrollHeight + 'px';
+        }
+
+        function estimateTokenCount(text) {
+            return Math.ceil(text.length / 4);
+        }
+      
+        function estimateMessageTokens(message) {
+            return 4 + estimateTokenCount(message.content);
+        }
+
+        function trimChatHistory(history) {
+            let currentTokens = history.reduce((sum, msg) => sum + estimateMessageTokens(msg), 0);
+
+            const systemMessage = history[0];
+            const conversationMessages = history.slice(1); 
+            if (currentTokens <= MAX_HISTORY_TOKENS) {
+                return history;
+            }
+
+            const trimmedConversation = [];
+            let tokensAfterTrimming = estimateMessageTokens(systemMessage); 
+            for (let i = conversationMessages.length - 1; i >= 0; i--) {
+                const message = conversationMessages[i];
+                const messageTokens = estimateMessageTokens(message);
+
+                if (tokensAfterTrimming + messageTokens <= MAX_HISTORY_TOKENS) {
+                    trimmedConversation.unshift(message);
+                    tokensAfterTrimming += messageTokens;
+                } else {
+                    break;
+                }
+            }
+            return [systemMessage, ...trimmedConversation];
+        }
+
+        async function handleUserMessage() {
+            const userMessageContent = userInput.value.trim(); 
+            if (!userMessageContent) return;
+
+            setInputState(true);
+            adjustTextareaHeight();
+
+            addMessage(userMessageContent, 'user');
+            chatHistory.push({ role: "user", content: userMessageContent });
+            userInput.value = '';
+
+            showTypingIndicator();
+            try {
+                chatHistory = trimChatHistory(chatHistory);
+                const aiResponseContent = await generateResponse(); 
+                hideTypingIndicator(); 
+                chatHistory.push({ role: "assistant", content: aiResponseContent });
+
+            } catch (error) {
+                console.error('Error during message handling:', error); 
+                hideTypingIndicator();
+                handleError(error);
+            } finally {
+                setInputState(false);
+                userInput.focus();
+                adjustTextareaHeight();
+            }
+        }
+
+        async function generateResponse() {
+            const requestBody = {
+                messages: chatHistory, 
+                userID: currentUserID, 
+            };
+
+            let fullResponse = "";
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                console.log("Frontend: Fetch response status for AI:", response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("Frontend: Backend non-OK response for AI:", errorData);
+                    throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorData.error || 'Unknown error from backend'}`);
+                }
+
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', 'ai-message');
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let accumulatedChunks = ''; 
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        console.log("Frontend: Stream finished."); 
+                        break;
+                    }
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    accumulatedChunks += chunk;
+                    const lines = accumulatedChunks.split('\n');
+                    accumulatedChunks = lines.pop();
+
+                    for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        if (trimmedLine.startsWith('data: ')) {
+                            try {
+                                const jsonData = JSON.parse(trimmedLine.substring(6));
+                                
+                                if (jsonData.content) {
+                                    fullResponse += jsonData.content;
+                                    const linkedText = fullResponse.replace(
+                                        /(https?:\/\/[^\s]+)/g,
+                                        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+                                    );
+                                    messageDiv.innerHTML = linkedText;
+                                    chatMessages.scrollTop = chatMessages.scrollHeight; 
+                                } else if (jsonData.error) {
+                                    console.error("Frontend: Received error from backend stream for AI:", jsonData.error);
+                                    messageDiv.innerHTML = `Error: ${jsonData.error}`;
+                                    reader.cancel(); 
+                                    throw new Error(`Stream Error: ${jsonData.error}`);
+                                }
+                            } catch (e) {
+                                console.warn('Frontend: Error parsing stream data chunk (possibly incomplete JSON or malformed) for AI:', e, 'Line:', trimmedLine);
+                            }
+                        }
+                    }
+                }
+                return fullResponse; 
+            } catch (error) {
+                console.error('Frontend Fetch/Stream Error for AI:', error);
+                throw error; 
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', `${sender}-message`);
+
+            const linkedText = text.replace(
+                /(https?:\/\/[^\s]+)/g,
+                '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+            );
+
+            messageDiv.innerHTML = linkedText;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.classList.add('typing-indicator');
+            if (!document.getElementById('typingIndicator')) {
+                indicator.innerHTML = '<span></span><span></span><span></span>';
+                indicator.id = 'typingIndicator';
+                chatMessages.appendChild(indicator);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function setInputState(disabled) {
+            userInput.disabled = disabled;
+            sendButton.disabled = disabled;
+            if (!disabled) {
+                userInput.focus();
+            }
+        }
+
+        function handleError(error) {
+            let errorMessage = "I apologize, but I'm having trouble responding right now. ";
+
+            if (error.message.includes('API key is not correctly set')) {
+                errorMessage = "It looks like your API key is not correctly set on the backend server. Please check your backend configuration. 🌟";
+            } else if (error.message.includes('429') || error.message.includes('RateLimitError')) {
+                errorMessage += "The service is experiencing high traffic or you've hit a rate limit. Please try again in a moment. ✨";
+            } else if (error.message.includes('401') || error.message.includes('403')) {
+                errorMessage += "There seems to be an authentication issue with the backend's API key. Please double-check it. 💭";
+            } else if (error.message.includes('400') || error.message.includes('context length exceeded')) {
+                errorMessage += "There was an issue with the request sent to the AI through the backend, possibly due to context length. 🫂";
+            } else if (error.message.includes('500') || error.message.includes('Failed to fetch') || error.message.includes('ECONNREFUSED')) {
+                errorMessage += "The backend server is unavailable or there's a network issue. Please ensure the server is running and Ollama is active. 🫂";
+            } else if (error.message.includes('model "llama3" not found') || error.message.includes('NotFoundError: 404 model')) {
+                errorMessage += "The AI model isn't found locally. Please ensure Ollama is running and you've pulled the correct model (e.g., 'llama3') via the Ollama command line. ✨";
+            } else {
+                errorMessage += "Please try again. 💭";
+            }
+
+            addMessage(errorMessage, 'ai');
+        }
+        
+        function showExit(){
+            message.classList.remove('hidden-element'); 
+            setTimeout(() => {
+                message.classList.add('show');
+            }, 10); //내가 쓴 거
+        }
+
+        function hideExit(){
+            message.classList.remove('show');
+            setTimeout(() => {
+                message.classList.add('hidden-element');
+            }, 300);
+        }//내가 쓴 거
+        
+        // --- 이 함수만 수정했습니다 ---
+        function prepareConversationForSaving(){ 
+            const formattedMessages = [];
+            // chatHistory[0]은 시스템 프롬프트이므로 건너뜁니다.
+            for (let i = 1; i < chatHistory.length; i++) {
+                const chatMessage = chatHistory[i]; 
+                
+                // server.js의 Conversations 테이블 스키마와 save_conversation_session 엔드포인트에 맞춥니다.
+                formattedMessages.push({
+                    userID: currentUserID, // 사용자 ID
+                    chatID: currentConversationId, // 현재 대화 세션 ID (SessionID에 해당)
+                    messageType: chatMessage.role === "user" ? "user" : "assistant", // "user" 또는 "assistant" (role에 해당)
+                    messageContent: chatMessage.content, // 메시지 내용 (content에 해당)
+                    timeStamp: new Date().toISOString() // 현재 타임스탬프 (선택 사항, 서버에서 NOW() 사용 가능)
+                }); //하다가 꼬여서 ai 도움 받음
+            }
+            return formattedMessages;
+        }
+
+        async function sendConversationToServer(formattedData){ 
+            try {
+                const response = await fetch(conversationSaveEndpoint, { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-access-password': 'Ilovebha10' },
+                    body: JSON.stringify({
+                        userId: currentUserID, 
+                        conversationId: currentConversationId, 
+                        messages: formattedData 
+                    })
+                });//내가 쓴 거
+
+                if (response.ok) {
+                    console.log('Conversation session successfully sent to server.');
+                    return true;
+                } else {
+                    const errorText = await response.text(); 
+                    console.error('Failed to send conversation session:', response.status, errorText);
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error sending conversation session to server:', error);
+                return false;
+            }
+        }//내가 쓴 거
+
+        window.addEventListener('beforeunload', function (event) {
+            if (allowPageExit) {
+                return;
+            }
+            showExit(); 
+
+    
+            const confirmationMessage = "Once you exit the page, all the conversations will be sent to the counselor. If you need help, please book a meeting with the Google Calendar.";
+            event.returnValue = confirmationMessage; 
+            return confirmationMessage; 
+        });
+
+        yesButton.addEventListener('click', async function(){
+            hideExit(); 
+            console.log("Attempting to exit chat and save conversation...");
+            const formattedConversation = prepareConversationForSaving(); 
+            const success = await sendConversationToServer(formattedConversation); //내가 쓴 거
+
+            if (success){
+                allowPageExit = true; 
+                console.log("Conversation saved. Navigating to student main page.");
+                window.location.href = 'student main page.html'; //내가 쓴 거
+            }
+            else{
+                allowPageExit = false; 
+                console.error("Failed to save conversation. Please try again.");
+            }
+        }); //내가 쓴 거
+        
+        cancelButton.addEventListener('click', () => { 
+            hideExit();  
+            console.log("Exit cancelled.");
+        });
+        exitButton.addEventListener('click', () => {
+            showExit(); 
+        });//내가 쓴 거
+    </script>
+</body>
+</html>
